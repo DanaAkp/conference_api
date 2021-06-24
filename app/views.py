@@ -131,8 +131,8 @@ def create_record_in_schedule():
     if Schedule.query.filter_by(room_id=request.json['room_id'],
                                 date_start=request.json['date_start']).first() is not None:
         abort(409, f'Room is busy in this time.')
-    new_room = Room(room_id=request.json['room_id'], date_start=request.json['date_start'],
-                    presentation_id=request.json['presentation_id'])
+    new_room = Schedule(room_id=request.json['room_id'], date_start=request.json['date_start'],
+                        presentation_id=request.json['presentation_id'])
     db.session.add(new_room)
     db.session.commit()
     return jsonify(json_list=[i.serialize for i in Schedule.query.all()]), 201
