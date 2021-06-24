@@ -1,4 +1,6 @@
-from app import db
+from flask_login import UserMixin
+
+from app.app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -11,6 +13,16 @@ class Presentation(db.Model):
 
     schedule = db.relationship('Schedule', backref='presentation')
 
+    @property
+    def serialize(self):
+        """Возвращает данные в сериализуемом формате."""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'text': self.text,
+            'user_id': self.user_id
+        }
+
     def __str__(self):
         return self.name
 
@@ -21,6 +33,14 @@ class Room(db.Model):
     name = db.Column(db.Text)
     schedule = db.relationship('Schedule', backref='room')
 
+    @property
+    def serialize(self):
+        """Возвращает данные в сериализуемом формате."""
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
     def __str__(self):
         return 'Room #' + str(self.id)
 
@@ -29,11 +49,24 @@ class Schedule(db.Model):
     __tablename__ = 'schedule'
     id = db.Column(db.Integer, nullable=False, primary_key=True)
     date_start = db.Column(db.DateTime, nullable=False)
-    id_presentation = db.Column(db.Integer, db.ForeignKey('presentations.id'), nullable=False)
-    id_room = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
+    presentation_id = db.Column(db.Integer, db.ForeignKey('presentations.id'), nullable=False)
+    room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
+
+    @property
+    def serialize(self):
+        """Возвращает данные в сериализуемом формате."""
+        return {
+            'id': self.id,
+            'date_start': self.date_start,
+            'presentation_id': self.presentation_id,
+            'room_id': self.room_id
+        }
+
+    def __str__(self):
+        return f'{self.date_start} - {self.room_id}'
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
