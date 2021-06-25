@@ -42,7 +42,7 @@ class Room(db.Model):
         }
 
     def __str__(self):
-        return 'Room #' + str(self.id)
+        return self.name
 
 
 class Schedule(db.Model):

@@ -43,12 +43,9 @@ def logout():
 def register():
     form = RegistrationForm()
     if request.method == "POST":
-        username = form.username.data
-        password = form.password.data
-        if User.query.filter_by(name=username).first() is None:
-            new_user = User()
-            new_user.name = username
-            new_user.set_password(password)
+        if User.query.filter_by(name=form.username.data).first() is None:
+            new_user = User(name=form.username.data, email=form.email.data, role_id=3)
+            new_user.set_password(form.password.data)
             db.session.add(new_user)
             db.session.commit()
         else:
