@@ -4,12 +4,18 @@ from app.app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
+presentation_user = db.Table('presentation_user',
+                             db.Column('presentations_id', db.Integer, db.ForeignKey('presentations.id')),
+                             db.Column('users_id', db.Integer, db.ForeignKey('users.id')))
+
+
 class Presentation(db.Model):
     __tablename__ = 'presentations'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)
     text = db.Column(db.Text)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    users = db.relationship('User', secondary='presentation_user',
+                            backref=db.backref('presentations', lazy='dynamic'))
 
     schedule = db.relationship('Schedule', backref='presentation')
 
@@ -73,7 +79,6 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(50), unique=True)
     password_hash = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    presentation = db.relationship('Presentation', backref='presentations')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
