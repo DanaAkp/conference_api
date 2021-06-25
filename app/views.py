@@ -205,7 +205,6 @@ def create_record_in_schedule():
 @app.route('/conference/api/schedule/<int:schedule_id>', methods=['PUT'])
 @login_required
 def update_schedule(schedule_id):
-    # TODO правильно ли по id обращаться к расписанию
     schedule = Schedule.query.filter_by(id=schedule_id).first()
     if schedule is None or not request.json or 'room_id' not in request.json or 'presentation_id' not in request.json \
             or 'date_start' not in request.json:
