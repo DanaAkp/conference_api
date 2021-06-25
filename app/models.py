@@ -3,7 +3,6 @@ from flask_login import UserMixin
 from app.app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 presentation_user = db.Table('presentation_user',
                              db.Column('presentations_id', db.Integer, db.ForeignKey('presentations.id')),
                              db.Column('users_id', db.Integer, db.ForeignKey('users.id')))
@@ -25,8 +24,7 @@ class Presentation(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'text': self.text,
-            'user_id': self.user_id
+            'text': self.text
         }
 
     def __str__(self):
@@ -85,6 +83,15 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def serialize(self):
+        """Возвращает данные в сериализуемом формате."""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email
+        }
 
     def __str__(self):
         return self.name

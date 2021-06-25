@@ -22,7 +22,7 @@ def not_found(error):
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-    form = LoginForm()
+    form = LoginForm(csrf_enabled=False)
     if form.validate_on_submit():
         user = User.query.filter_by(name=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
@@ -41,7 +41,7 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = RegistrationForm()
+    form = RegistrationForm(csrf_enabled=False)
     if request.method == "POST":
         if User.query.filter_by(name=form.username.data).first() is None:
             new_user = User(name=form.username.data, email=form.email.data, role_id=3)
@@ -52,6 +52,7 @@ def register():
             flash('Username is exist')
             return render_template('register.html', form=form)
     return render_template('register.html', form=form)
+
 
 # endregion
 
@@ -75,6 +76,8 @@ def get_presentation(presentation_id):
 @app.route('/conference/api/presentations', methods=['POST'])
 @login_required
 def create_presentation():
+    if current_user.role_id != 2:
+        abort(403, f'User cannot create a presentation.')
     if not request.json or 'name' not in request.json or 'text' not in request.json:
         abort(400)
     if Presentation.query.filter_by(name=request.json['name']).first() is not None:
@@ -89,6 +92,8 @@ def create_presentation():
 @login_required
 def update_presentation(presentation_id):
     presentation = Presentation.query.filter_by(id=presentation_id).first()
+    if not len(list(filter(lambda x: x.id == current_user.id, presentation.users))):
+        abort(403)
     if presentation is None or not request.json or 'name' not in request.json or 'text' not in request.json:
         abort(400)
     presentation.name = request.json['name']
@@ -100,6 +105,8 @@ def update_presentation(presentation_id):
 @app.route('/conference/api/presentations/<int:presentation_id>', methods=['DELETE'])
 @login_required
 def delete_presentation(presentation_id):
+    if current_user.role_id != 1:
+        abort(403)
     presentation = Presentation.query.filter_by(id=presentation_id).first()
     if presentation is None:
         abort(404)
@@ -115,12 +122,16 @@ def delete_presentation(presentation_id):
 @app.route('/conference/api/rooms', methods=['GET'])
 @login_required
 def get_rooms():
+    if current_user.role_id != 1:
+        abort(403)
     return jsonify(json_list=[i.serialize for i in Room.query.all()])
 
 
 @app.route('/conference/api/rooms/<int:rooms_id>', methods=['GET'])
 @login_required
 def get_room(rooms_id):
+    if current_user.role_id != 1:
+        abort(403)
     room = Room.query.filter_by(id=rooms_id).first()
     if room is None:
         abort(404)
@@ -130,6 +141,8 @@ def get_room(rooms_id):
 @app.route('/conference/api/rooms', methods=['POST'])
 @login_required
 def create_room():
+    if current_user.role_id != 1:
+        abort(403)
     if not request.json or 'name' not in request.json:
         abort(400)
     if Room.query.filter_by(name=request.json['name']).first() is not None:
@@ -143,6 +156,8 @@ def create_room():
 @app.route('/conference/api/rooms/<int:rooms_id>', methods=['PUT'])
 @login_required
 def update_room(rooms_id):
+    if current_user.role_id != 1:
+        abort(403)
     room = Room.query.filter_by(id=rooms_id).first()
     if room is None or not request.json or 'name' not in request.json:
         abort(400)
@@ -154,6 +169,8 @@ def update_room(rooms_id):
 @app.route('/conference/api/rooms/<int:rooms_id>', methods=['DELETE'])
 @login_required
 def delete_room(rooms_id):
+    if current_user.role_id != 1:
+        abort(403)
     room = Room.query.filter_by(id=rooms_id).first()
     if room is None:
         abort(404)
@@ -184,6 +201,8 @@ def get_record_in_schedule(schedule_id):
 @app.route('/conference/api/schedule', methods=['POST'])
 @login_required
 def create_record_in_schedule():
+    if current_user.role_id != 1 and current_user.role_id != 2:
+        abort(403)
     if not request.json or 'date_start' not in request.json or 'presentation_id' not in request.json or \
             'room_id' not in request.json:
         abort(400)
@@ -202,13 +221,16 @@ def create_record_in_schedule():
 @app.route('/conference/api/schedule/<int:schedule_id>', methods=['PUT'])
 @login_required
 def update_schedule(schedule_id):
+    if current_user.role_id != 1 and current_user.role_id != 2:
+        abort(403)
     schedule = Schedule.query.filter_by(id=schedule_id).first()
     if schedule is None or not request.json or 'room_id' not in request.json or 'presentation_id' not in request.json \
             or 'date_start' not in request.json:
         abort(400)
     schedule.room_id = request.json['room_id']
     schedule.presentation_id = request.json['presentation_id']
-    schedule.date_start = request.json['date_start']
+    date = request.json['date_start'].split('-')
+    schedule.date_start = datetime(int(date[0]), int(date[1]), int(date[2]))
     db.session.commit()
     return jsonify(Schedule.query.filter_by(id=schedule_id).first().serialize)
 
@@ -216,6 +238,8 @@ def update_schedule(schedule_id):
 @app.route('/conference/api/schedule/<int:schedule_id>', methods=['DELETE'])
 @login_required
 def delete_record_in_schedule(schedule_id):
+    if current_user.role_id != 1:
+        abort(403)
     schedule = Schedule.query.filter_by(id=schedule_id).first()
     if schedule is None:
         abort(404)
