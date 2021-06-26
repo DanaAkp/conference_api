@@ -20,11 +20,13 @@ class Presentation(db.Model):
 
     @property
     def serialize(self):
+        users = list(map(lambda x: x.serialize, self.users))
         """Возвращает данные в сериализуемом формате."""
         return {
             'id': self.id,
             'name': self.name,
-            'text': self.text
+            'text': self.text,
+            'users': users
         }
 
     def __str__(self):
