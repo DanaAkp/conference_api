@@ -17,6 +17,21 @@ def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
 
+@app.errorhandler(403)
+def not_found(error):
+    return make_response(jsonify({'error': 'Forbidden'}), 403)
+
+
+@app.errorhandler(400)
+def not_found(error):
+    return make_response(jsonify({'error': 'Bad request'}), 400)
+
+
+@app.errorhandler(409)
+def not_found(error):
+    return make_response(jsonify({'error': 'Conflict'}), 409)
+
+
 # region User authorize
 @app.route('/login', methods=['GET', 'POST'])
 def login():
