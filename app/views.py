@@ -3,6 +3,20 @@ from app.forms import RegistrationForm, LoginForm
 from app.rest_api import *
 
 
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    b = get_schedule()
+    return render_template('index.html', r_json=b.json['json_list'])
+
+
+@app.route('/presentations', methods=['GET', 'POST'])
+def presentations():
+    b = get_presentations()
+    if request.method == 'POST':
+        create_presentation()
+    return render_template('presentations.html', r_json=b.json['json_list'])
+
+
 # region User authorize
 @app.route('/login', methods=['GET', 'POST'])
 def login():

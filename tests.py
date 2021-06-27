@@ -47,7 +47,7 @@ class AbstractTestAPI(object, metaclass=ABCMeta):
         current_user.return_value = self.user
         r = self.app.post(self.OBJECT_URL, json=self.JSON_NEW_OBJECT)
         assert 201 == r.status_code
-        assert self.NUMBER_OF_OBJECTS + 1 == len(r.json['json_list'])
+        assert self.NUMBER_OF_OBJECTS + 1 == r.json['id']
 
     @abstractmethod
     def test_update_object(self):
