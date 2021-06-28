@@ -71,7 +71,7 @@ def create_presentation():
     check_bad_request_for_actions_on_presentation()
     if Presentation.query.filter_by(name=request.json['name']).first() is not None:
         abort(409, 'Presentation with this name already exist.')
-    new_presentation = Presentation(name=request.json['name'], text=request.json['text'])
+    new_presentation = Presentation(name=request.json['name'], text=request.json['text'], users=[current_user])
     db.session.add(new_presentation)
     db.session.commit()
     return jsonify(new_presentation.serialize), 201
@@ -108,7 +108,6 @@ def delete_presentation(presentation_id):
 @app.route('/conference/api/rooms', methods=['GET'])
 @login_required
 def get_rooms():
-    check_access_user(1, 'Only admin can view a rooms.')
     return jsonify(json_list=[i.serialize for i in Room.query.all()])
 
 
@@ -193,6 +192,22 @@ def check_bad_request_for_actions_on_schedule():
         abort(400, 'Field presentation is required.')
     if 'room_id' not in request.json:
         abort(400, 'Field room is required.')
+
+
+@app.route('/conference/api/schedule/check_room_busy', methods=['POST'])
+@login_required
+def check_busy_room_at_the_time():
+    if not request.json:
+        abort(400, 'Request body is required.')
+    if 'date_start' not in request.json:
+        abort(400, 'Field date start is required.')
+    if 'room_id' not in request.json:
+        abort(400, 'Field room is required.')
+
+    if Schedule.query.filter_by(room_id=request.json['room_id'],
+                                date_start=request.json['date_start']).first() is not None:
+        return jsonify({'result': False})
+    return jsonify({'result': True})
 
 
 @app.route('/conference/api/schedule', methods=['POST'])

@@ -3,9 +3,6 @@
 {% block content %}
 <div>
   <h1>Presentations</h1>
-  {% if r_json|length < 1 %}
-  <p>No presentations yet.</p>
-  {% else %}
   <table>
     <thead>
       <tr>
@@ -17,12 +14,13 @@
     </thead>
     <tbody id="presentations-table-tbody">    </tbody>
   </table>
-  {% endif %}
 
   <form action="/presentations" method="POST"  id="presentation-form">
     <label for="newStuff">New presentation:</label>
     <input type="text" name="name" id="newName">
     <input type="text" name="text" id="newText">
+      <input type="date" id="dateStart" name="date-start" value="2021-01-01">
+      <input type="text" id="newRoom" name="name of room">
     <button type="submit">Add</button>
   </form>
 </div>
@@ -30,76 +28,125 @@
         function create_table()
         {
             const id_tbody = "presentations-table-tbody";
-        var request = new XMLHttpRequest();
-        request.open('GET', '/conference/api/presentations', false);
-        request.send();
-        var presentations = JSON.parse(request.responseText)["json_list"];
-        var new_tbody = document.createElement('tbody');
-
-        for(var i in presentations)
-        {
-            var row = document.createElement('tr');
-            var column_id = document.createElement('td');
-            column_id.innerText = presentations[i]['id'];
-            row.appendChild(column_id);
-
-            var column_name = document.createElement('td');
-            column_name.innerText = presentations[i]['name'];
-            row.appendChild(column_name);
-
-            var column_text = document.createElement('td');
-            column_text.innerText = presentations[i]['text'];
-            row.appendChild(column_text);
-
-            var column_users = document.createElement('td');
-            var str = "";
-            for( var user in presentations[i]['users'])
+            const request = new XMLHttpRequest();
+            request.open('GET', '/conference/api/presentations', false);
+            request.send();
+            let presentations = JSON.parse(request.responseText)["json_list"];
+            let new_tbody = document.createElement('tbody');
+            for(let i in presentations)
             {
-                str+=" "+presentations[i]['users'][user]['name'];
+                let row = document.createElement('tr');
+                let column_id = document.createElement('td');
+                column_id.innerText = presentations[i]['id'];
+                row.appendChild(column_id);
+
+                let column_name = document.createElement('td');
+                column_name.innerText = presentations[i]['name'];
+                row.appendChild(column_name);
+
+                let column_text = document.createElement('td');
+                column_text.innerText = presentations[i]['text'];
+                row.appendChild(column_text);
+
+                let column_users = document.createElement('td');
+                let str = "";
+                for( let user in presentations[i]['users'])
+                {
+                    str+=" "+presentations[i]['users'][user]['name'];
+                }
+                column_users.innerText = str;
+                row.appendChild(column_users);
+
+                let column_delete = document.createElement('td');
+                let input_delete = document.createElement('input');
+                input_delete.value = 'Delete';
+
+                let del = delete_presentation(presentations[i]['id']);
+
+                input_delete.onclick = function() { del() };
+                input_delete.type = 'button';
+                column_delete.appendChild(input_delete);
+                row.appendChild(column_delete);
+
+                new_tbody.appendChild(row);
             }
-            column_users.innerText = str;
-            row.appendChild(column_users);
-
-            new_tbody.appendChild(row);
+            let old_tbody = document.getElementById(id_tbody);
+            old_tbody.parentElement.replaceChild(new_tbody, old_tbody);
+            new_tbody.id = id_tbody;
         }
-        var old_tbody = document.getElementById(id_tbody);
-        old_tbody.parentElement.replaceChild(new_tbody, old_tbody);
-        new_tbody.id = id_tbody;
-    }
-
-    create_table();
+        create_table();
 
         document.getElementById('presentation-form').addEventListener('submit', check);
         function check(e)
         {
             e.preventDefault();
-            var name = document.getElementById('newName').value;
-            var text = document.getElementById('newText').value;
+            let name = document.getElementById('newName').value;
+            let text = document.getElementById('newText').value;
+            let date_start = document.getElementById('dateStart').value;
+            let room_id = document.getElementById('newRoom').value
 
-            var request = new XMLHttpRequest()
-            request.open('POST', '/conference/api/presentations', true)
-            request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-            var json = JSON.stringify(
-                {
-                name: name,
-                text: text
-                });
-            request.onreadystatechange = function (){
-                if (request.readyState === 4){
-                    if(request.status === 201)
-                        create_table()
-                    else {
-                        alert(JSON.parse(request.response).message)
-                    }
-                }
-            }
-            request.send(json);
-            create_table()
+            const check_request = new XMLHttpRequest()
+            check_request.open('POST', '/conference/api/schedule/check_room_busy', true);
+            check_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+            check_request.send(JSON.stringify({
+                date_start: date_start,
+                room_id: room_id }));
+            check_request.onreadystatechange = function ()
+            {
+              if (check_request.readyState === 4)
+              {
+                  if( JSON.parse(check_request.response).result === true)
+                  {
+                      const request = new XMLHttpRequest();
+                      request.open('POST', '/conference/api/presentations', true);
+                      request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+                      let json = JSON.stringify({
+                          name: name,
+                          text: text });
+                      request.onreadystatechange = function ()
+                      {
+                          if (request.readyState === 4)
+                          {
+                              if(request.status === 201)
+                              {
+                                  create_table()
+                                  var schedule_request = new XMLHttpRequest();
+                                  schedule_request.open('POST', '/conference/api/schedule', true);
+                                  schedule_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                                  schedule_request.send(JSON.stringify({
+                                      room_id: room_id,
+                                      presentation_id: JSON.parse(request.response).id,
+                                      date_start: date_start}));
+                                  alert('Presentation added to schedule.');
+                              }
+                              else {alert(JSON.parse(request.response).message);}
+                          }
+                      }
+                      request.send(json);
+                      create_table();
+                  }
+                  else alert('At the selected time, the audience is busy.');
+              }
+            };
         }
 
-    </script>
-    <script>
-
+        function delete_presentation(id){
+            return function ()
+            {
+                const request = new XMLHttpRequest();
+                request.open('DELETE', `/conference/api/presentations/${id}`, false);
+                request.send();
+                if (request.status !== 200)
+                    alert(JSON.parse(request.response).message);
+                else
+                {
+                    alert('Presentation deleted success.');
+                    create_table();
+                }
+            }
+        }
 
     </script>
 {% endblock content %}

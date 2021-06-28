@@ -16,7 +16,7 @@ class Presentation(db.Model):
     users = db.relationship('User', secondary='presentation_user',
                             backref=db.backref('presentations', lazy='dynamic'))
 
-    schedule = db.relationship('Schedule', backref='presentation')
+    schedule = db.relationship('Schedule', cascade="all,delete", backref='presentation')
 
     @property
     def serialize(self):
@@ -37,7 +37,7 @@ class Room(db.Model):
     __tablename__ = 'rooms'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text)
-    schedule = db.relationship('Schedule', backref='room')
+    schedule = db.relationship('Schedule', cascade="all,delete", backref='room')
 
     @property
     def serialize(self):
