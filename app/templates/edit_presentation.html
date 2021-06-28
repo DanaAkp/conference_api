@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div>
+        <h1>Presentations</h1>
+
+
+        <form action="/presentations" method="POST" id="presentation-form">
+            <label for="newStuff">New presentation:</label>
+            <p>
+                <label>Name</label>
+                <input type="text" name="name" id="newName">
+            </p>
+            <p>
+                <label>Text</label>
+                <input type="text" name="text" id="newText">
+            </p>
+
+            <div id="create-record-in-schedule">
+{#                <p>#}
+{#                    <label>Date start</label>#}
+{#                    <input type="date" id="dateStart" name="date-start" value="2021-01-01">#}
+{#                </p>#}
+{#                <p>#}
+{#                    <label>Room id</label>#}
+{#                    <input type="text" id="newRoom" name="id of room">#}
+{#                </p>#}
+            </div>
+            <p>
+                <button type="submit">Add</button>
+            </p>
+        </form>
+    </div>
+    <script>
+        let name = document.getElementById('newName');
+        let text = document.getElementById('newText');
+        let date_start = document.getElementById('dateStart');
+        let room_id = document.getElementById('newRoom');
+        let method;
+
+        let presentation_id = parseInt({{ presentation_id }});
+        if (presentation_id !== -1) {
+            fill_in_data_fields(presentation_id)
+            method = 'PUT';
+        }
+        else {
+            method = 'POST';
+            let create_record_in_schedule = document.getElementById('create-record-in-schedule');
+
+            let paragraph_date_start = document.createElement('p');
+            let label_date_start = document.createElement('label');
+            label_date_start.textContent = 'Date start';
+            let input_date_start = document.createElement('input');
+            input_date_start.type="date";
+            input_date_start.id="dateStart";
+            input_date_start.name="date-start";
+            input_date_start.value="2021-01-01";
+            paragraph_date_start.appendChild(label_date_start);
+            paragraph_date_start.appendChild(input_date_start);
+            create_record_in_schedule.appendChild(paragraph_date_start);
+
+            let paragraph_room_id = document.createElement('p');
+            let label_room_id = document.createElement('label');
+            label_room_id.textContent = 'Room id';
+            let input_room_id = document.createElement('input');
+            input_room_id.type="text";
+            input_room_id.id="newRoom";
+            input_room_id.name="id of room";
+            paragraph_room_id.appendChild(label_room_id);
+            paragraph_room_id.appendChild(input_room_id);
+            create_record_in_schedule.appendChild(paragraph_room_id);
+
+        }
+        document.getElementById('presentation-form').addEventListener('submit', check);
+
+        function check(e) {
+            e.preventDefault();
+
+            const check_request = new XMLHttpRequest()
+            check_request.open('POST', '/conference/api/schedule/check_room_busy', true);
+            check_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+            check_request.send(JSON.stringify({
+                date_start: date_start.value,
+                room_id: room_id.value
+            }));
+            check_request.onreadystatechange = function () {
+                if (check_request.readyState === 4) {
+                    if (JSON.parse(check_request.response).result === true) {
+                        const request = new XMLHttpRequest();
+                        request.open(method, '/conference/api/presentations', true);
+                        request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+                        let json = JSON.stringify({
+                            name: name.value,
+                            text: text.value
+                        });
+                        request.onreadystatechange = function () {
+                            if (request.readyState === 4) {
+                                if (request.status === 201) {
+                                    create_table()
+                                    var schedule_request = new XMLHttpRequest();
+                                    schedule_request.open(method, '/conference/api/schedule', true);
+                                    schedule_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                                    schedule_request.send(JSON.stringify({
+                                        room_id: room_id.value,
+                                        presentation_id: JSON.parse(request.response).id,
+                                        date_start: date_start.value
+                                    }));
+                                    alert('Schedule updated success.');
+                                } else {
+                                    alert(JSON.parse(request.response).message);
+                                }
+                            }
+                        }
+                        request.send(json);
+                        create_table();
+                    } else alert('At the selected time, the room is busy.');
+                }
+            };
+        }
+
+        function fill_in_data_fields(presentation_id) {
+            let request = new XMLHttpRequest()
+            request.open('GET', `/conference/api/presentations/${presentation_id}`, false);
+            request.send();
+
+            name.value = JSON.parse(request.response).name;
+            text.value = JSON.parse(request.response).text;
+            {# TODO добавить изменение времени и места в расписание для этой резентации#}
+        }
+    </script>
+{% endblock content %}

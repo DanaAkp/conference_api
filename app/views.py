@@ -3,21 +3,36 @@ from app.forms import RegistrationForm, LoginForm
 from app.rest_api import *
 
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    return render_template('index.html')
+@app.route('/')
+def page_home():
+    return render_template('home.html')
+
+
+@app.route('/schedule', methods=['GET', 'POST'])
+def page_schedule():
+    return render_template('schedule.html')
 
 
 @app.route('/presentations', methods=['GET', 'POST'])
-def presentations():
+def page_presentations():
     return render_template('presentations.html')
+
+
+@app.route('/presentations/edit/<int:presentation_id>', methods=['GET', 'POST'])
+def page_edit_presentation(presentation_id):
+    return render_template('edit_presentation.html', presentation_id=presentation_id)
+
+
+@app.route('/presentations/create', methods=['GET', 'POST'])
+def page_create_presentation():
+    return render_template('edit_presentation.html', presentation_id=-1)
 
 
 # region User authorize
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('page_home'))
     form = LoginForm(csrf_enabled=False)
     if form.validate_on_submit():
         user = User.query.filter_by(name=form.username.data).first()
@@ -32,7 +47,7 @@ def login():
 @app.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    return redirect(url_for('page_home'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
