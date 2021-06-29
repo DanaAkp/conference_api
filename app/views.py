@@ -1,6 +1,15 @@
+from flask_login import AnonymousUserMixin
+
 from app.app import app, db
 from app.forms import RegistrationForm, LoginForm
 from app.rest_api import *
+
+
+@app.context_processor
+def inject_user():
+    if isinstance(current_user, AnonymousUserMixin):
+        return dict(current_user=None)
+    return dict(current_user=current_user.serialize)
 
 
 @app.route('/')
@@ -59,7 +68,7 @@ def register():
     form = RegistrationForm(csrf_enabled=False)
     if request.method == "POST":
         if User.query.filter_by(name=form.username.data).first() is None:
-            new_user = User(name=form.username.data, email=form.email.data, role_id=3)
+            new_user = User(name=form.username.data, role_id=3)
             new_user.set_password(form.password.data)
             db.session.add(new_user)
             db.session.commit()

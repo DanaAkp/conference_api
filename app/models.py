@@ -88,11 +88,12 @@ class User(UserMixin, db.Model):
 
     @property
     def serialize(self):
+        name_role = Role.query.filter_by(id=self.role_id).first()
         """Возвращает данные в сериализуемом формате."""
         return {
             'id': self.id,
             'name': self.name,
-            'email': self.email
+            'role': name_role.name
         }
 
     def __str__(self):
@@ -104,6 +105,13 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
     users = db.relationship('User', backref='role')
+
+    @property
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
 
     def __str__(self):
         return self.name

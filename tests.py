@@ -1,11 +1,33 @@
-from datetime import datetime
-
-import requests
 import unittest
-
+from datetime import datetime
 from unittest import mock
 from abc import ABCMeta, abstractmethod
-from app.app import app
+from app.app import app, db
+from app.models import User, Presentation, Role, Schedule, Room
+
+
+@app.before_request
+def insert_test_data():
+    db.drop_all()
+    db.create_all()
+    roles = [Role(name='admin'), Role(name='presenter'), Role(name='listener')]
+
+    users = [User(name='administrator', role_id=1),
+             User(name='user presenter', role_id=2),
+             User(name='user listener', role_id=3)]
+
+    presentations = [Presentation(name='presentation 1', text='presentation text'),
+                     Presentation(name='presentation 2', text='presentation text'),
+                     Presentation(name='presentation 3', text='presentation text')]
+    presentations[0].users.append(users[1])
+    rooms = [Room(name='20-505'), Room(name='20-511'), Room(name='20-506')]
+
+    schedule = [Schedule(date_start=datetime(2021, 5, 3), presentation_id=1, room_id=1),
+                Schedule(date_start=datetime(2021, 6, 3), presentation_id=2, room_id=2)]
+
+    for i in roles + users + presentations + rooms + schedule:
+        db.session.add(i)
+        db.session.commit()
 
 
 class AbstractTestAPI(object, metaclass=ABCMeta):
@@ -70,6 +92,13 @@ class TestPresentation(AbstractTestAPI, unittest.TestCase):
     ROLE_ID = 2
 
     @mock.patch('flask_login.utils._get_user')
+    def test_create_object(self, current_user):
+        current_user.return_value = User(name='user 1', role_id=self.ROLE_ID)
+        r = self.app.post(self.OBJECT_URL, json=self.JSON_NEW_OBJECT)
+        assert 201 == r.status_code
+        assert self.NUMBER_OF_OBJECTS + 1 == r.json['id']
+
+    @mock.patch('flask_login.utils._get_user')
     def test_update_object(self, current_user):
         self.user.id = 2
         current_user.return_value = self.user
@@ -131,11 +160,9 @@ class TestRoom(AbstractTestAPI, unittest.TestCase):
 
     @mock.patch('flask_login.utils._get_user')
     def test_actions_with_rooms_by_invalid_user(self, current_user):
-        self.user.role_id = 2
+        self.user.role_id = 3
         current_user.return_value = self.user
         r = self.app.get(f'{self.OBJECT_URL}/{self.ID}')
-        assert 403 == r.status_code
-        r = self.app.get(f'{self.OBJECT_URL}')
         assert 403 == r.status_code
 
 

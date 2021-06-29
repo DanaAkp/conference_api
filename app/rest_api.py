@@ -1,6 +1,6 @@
 import requests
 from flask import jsonify, abort, make_response, request, url_for, redirect, flash, render_template
-from flask_login import logout_user, current_user, login_user, login_required
+from flask_login import logout_user, current_user, login_user, login_required, AnonymousUserMixin
 
 from app.app import app, db
 from app.models import Presentation, Schedule, Room, Role, User
@@ -39,6 +39,14 @@ def check_for_availability(object_for_check, error_message):
         abort(404, error_message)
 
 
+@app.route('/conference/api/whoami', methods=['GET'])
+@login_required
+def whoami():
+    if isinstance(current_user, AnonymousUserMixin):
+        return jsonify(dict(current_user=None))
+    return jsonify(current_user.serialize)
+
+
 # region Presentation
 @app.route('/conference/api/presentations', methods=['GET'])
 @login_required
@@ -72,6 +80,7 @@ def create_presentation():
     if Presentation.query.filter_by(name=request.json['name']).first() is not None:
         abort(409, 'Presentation with this name already exist.')
     new_presentation = Presentation(name=request.json['name'], text=request.json['text'], users=[current_user])
+    print(new_presentation)
     db.session.add(new_presentation)
     db.session.commit()
     return jsonify(new_presentation.serialize), 201

@@ -1,25 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+{% extends 'base.html' %}
+
 <body>
-<p>
-    <a href="/login">Login</a>
-</p>
-<p>
-<a href="/register">Register</a>
-</p>
-<p>
-<a href="/schedule">Schedule</a>
-    </p>
-<p>
-<a href="/presentations">Presentations</a>
-    </p>
-<p>
-<a href="/admin">For admin</a>
-</p>
+
+{% block content %}
+    {% if current_user %}
+        <p>
+            <a href="/schedule">Schedule</a>
+        </p>
+        <p>
+            <a href="/presentations">Presentations</a>
+        </p>
+        {% if current_user['role'] | string() == 'admin' %}
+            <p>
+                <a href="/admin">For admin</a>
+            </p>
+        {% endif %}
+        <p>
+            <a href="/logout">Logout</a>
+        </p>
+    {% else %}
+        <p>
+            <a href="/login">Login</a>
+        </p>
+        <p>
+            <a href="/register">Register</a>
+        </p>
+    {% endif %}
+
+{% endblock %}
 
 </body>
 </html>

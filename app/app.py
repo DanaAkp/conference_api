@@ -38,28 +38,19 @@ def load_user(id):
     return User.query.get(int(id))
 
 
-# @app.before_request
-# def insert_test_data():
-#     db.drop_all()
-#     db.create_all()
-#     roles = [Role(name='admin'), Role(name='presenter'), Role(name='listener')]
-#
-#     users = [User(name='administrator', role_id=1, password_hash=generate_password_hash('password')),
-#              User(name='user presenter', role_id=2, password_hash=generate_password_hash('password')),
-#              User(name='user listener', role_id=3, password_hash=generate_password_hash('password'))]
-#
-#     presentations = [Presentation(name='presentation 1', text='presentation text'),
-#                      Presentation(name='presentation 2', text='presentation text'),
-#                      Presentation(name='presentation 3', text='presentation text')]
-#     presentations[0].users.append(users[1])
-#     rooms = [Room(name='20-505'), Room(name='20-511'), Room(name='20-506')]
-#
-#     schedule = [Schedule(date_start=datetime(2021, 5, 3), presentation_id=1, room_id=1),
-#                 Schedule(date_start=datetime(2021, 6, 3), presentation_id=2, room_id=2)]
-#
-#     for i in roles + users + presentations + rooms + schedule:
-#         db.session.add(i)
-#         db.session.commit()
+@app.before_first_request
+def insert_test_data():
+    db.drop_all()
+    db.create_all()
+    roles = [Role(name='admin'), Role(name='presenter'), Role(name='listener')]
+
+    users = [User(name='administrator', role_id=1, password_hash=generate_password_hash('password')),
+             User(name='user presenter', role_id=2, password_hash=generate_password_hash('password')),
+             User(name='user listener', role_id=3, password_hash=generate_password_hash('password'))]
+
+    for i in roles + users:
+        db.session.add(i)
+        db.session.commit()
 
 
 from app.views import *

@@ -13,7 +13,9 @@
 </head>
 
 <body>
+    {% if current_user %}
+    <label>Hello, {{ current_user['name'] }}! Your role - {{ current_user['role'] }}</label>
+    {% endif %}
   {% block content %}{% endblock %}
 </body>
-
 </html>
