@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div>
+        <h1>Schedule</h1>
+        <table>
+            <thead>
+            <tr>
+                <th>id</th>
+                <th>Name of presentation</th>
+                <th>Date start</th>
+                <th>Room id</th>
+            </tr>
+            </thead>
+            <tbody id="table-body-schedule">
+            </tbody>
+        </table>
+    </div>
+    <script>
+        let table_body_schedule = document.getElementById('table-body-schedule');
+
+        const request = new XMLHttpRequest();
+        request.open('GET', '/conference/api/schedule', false);
+        request.send();
+        let records_in_schedule = JSON.parse(request.response)['json_list'];
+        for (let i in records_in_schedule) {
+            let row = document.createElement('tr');
+
+            let column_id = document.createElement('td');
+            column_id.innerText = records_in_schedule[i]['id'];
+            row.appendChild(column_id);
+
+            let column_presentation_id = document.createElement('td');
+            column_presentation_id.innerText = get_name_of_presentation(records_in_schedule[i]['presentation_id']);
+            row.appendChild(column_presentation_id);
+
+            let column_date_start = document.createElement('td');
+            column_date_start.innerText = records_in_schedule[i]['date_start'];
+            row.appendChild(column_date_start);
+
+            let column_room_id = document.createElement('td');
+            column_room_id.innerText = records_in_schedule[i]['room_id'];
+            row.appendChild(column_room_id);
+
+            table_body_schedule.appendChild(row);
+        }
+        function get_name_of_presentation(presentation_id){
+            const request = new XMLHttpRequest();
+            request.open('GET', `/conference/api/presentations/${presentation_id}`, false);
+            request.send();
+            return JSON.parse(request.response).name;
+        }
+    </script>
+{% endblock content %}

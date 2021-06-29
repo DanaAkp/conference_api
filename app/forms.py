@@ -10,8 +10,6 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username')
-    email = StringField('Email')
-    # TODO сделать проверку email
     password = PasswordField('Password')
     confirm = PasswordField('Repeat password')
 

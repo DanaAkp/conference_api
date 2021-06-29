@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1 id="presentation-name"></h1>
+    <form action="/schedule/edit/{{ schedule_id }}" id="schedule-form">
+        <p>
+            <label>Date start</label>
+            <input type="date" id="date-start"></p>
+        <p>
+            <label>Room id</label>
+            <input type="text" id="room-id"></p>
+        <button type="submit">Save</button>
+    </form>
+    <script>
+        let schedule_id = {{ schedule_id }};
+        const request = new XMLHttpRequest()
+        request.open('GET', `/conference/api/schedule/${schedule_id}`, false);
+        request.send();
+        let json_parse_request = JSON.parse(request.response);
+        let room_id = json_parse_request.room_id;
+        let presentation_id = json_parse_request.presentation_id;
+        let date_start = json_parse_request.date_start.toString();
+
+        const request_presentation = new XMLHttpRequest();
+        request_presentation.open('GET', `/conference/api/presentations/${presentation_id}`, false);
+        request_presentation.send();
+
+        let name_presentation = document.getElementById('presentation-name');
+        name_presentation.textContent = JSON.parse(request_presentation.response).name;
+
+        let input_date_start = document.getElementById('date-start');
+        let input_room_id = document.getElementById('room-id');
+
+        input_date_start.value = date_start;
+        input_room_id.value = room_id;
+
+        document.getElementById('schedule-form').addEventListener('submit', check);
+
+        function check(e) {
+            e.preventDefault();
+            if (input_date_start.value !== '2000-01-01') {
+                const check_request = new XMLHttpRequest()
+                check_request.open('POST', '/conference/api/schedule/check_room_busy', true);
+                check_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+                check_request.send(JSON.stringify({
+                    date_start: input_date_start.value,
+                    room_id: input_room_id.value
+                }));
+                check_request.onreadystatechange = function () {
+                    if (check_request.readyState === 4) {
+                        if (JSON.parse(check_request.response).result === true) {
+
+                            const save_request = new XMLHttpRequest();
+                            save_request.open('PUT', `/conference/api/schedule/${schedule_id}`, true);
+                            save_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+                            save_request.send(JSON.stringify({
+                                date_start: input_date_start.value,
+                                room_id: input_room_id.value,
+                                presentation_id: presentation_id
+                            }));
+                            save_request.onreadystatechange = function () {
+                                if (save_request.readyState === 4) {
+                                    if (save_request.status === 200) {
+                                        window.location.href = `/presentations/edit/${presentation_id}`;
+                                    } else alert(JSON.parse(save_request.response).message);
+                                }
+                            }
+                        } else alert('Room is busy in this time.')
+                    }
+                }
+            }
+            else alert('Date start must change.')
+
+        }
+    </script>
+{% endblock %}

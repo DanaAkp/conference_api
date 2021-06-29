@@ -9,23 +9,27 @@ def page_home():
 
 
 @app.route('/schedule', methods=['GET', 'POST'])
+@login_required
 def page_schedule():
     return render_template('schedule.html')
 
 
 @app.route('/presentations', methods=['GET', 'POST'])
+@login_required
 def page_presentations():
     return render_template('presentations.html')
 
 
 @app.route('/presentations/edit/<int:presentation_id>', methods=['GET', 'POST'])
+@login_required
 def page_edit_presentation(presentation_id):
     return render_template('edit_presentation.html', presentation_id=presentation_id)
 
 
-@app.route('/presentations/create', methods=['GET', 'POST'])
-def page_create_presentation():
-    return render_template('edit_presentation.html', presentation_id=-1)
+@app.route('/schedule/edit/<int:schedule_id>', methods=['GET', 'POST'])
+@login_required
+def page_edit_schedule(schedule_id):
+    return render_template('edit_schedule.html', schedule_id=schedule_id)
 
 
 # region User authorize
@@ -63,6 +67,5 @@ def register():
             flash('Username is exist')
             return render_template('register.html', form=form)
     return render_template('register.html', form=form)
-
 
 # endregion

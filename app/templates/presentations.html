@@ -78,7 +78,29 @@
         create_table();
 
         function create_new_presentation(){
-            window.location.href = '/presentations/create'
+            const request = new XMLHttpRequest()
+            request.open('POST', '/conference/api/presentations', true);
+            request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+
+            const json = JSON.stringify({
+                name: 'New presentation',
+                text: 'Text of new presentation'
+            });
+
+            request.send(json);
+            request.onreadystatechange = function () {
+                if (request.readyState === 4) {
+                    if (request.status === 201) {
+                        let id = JSON.parse(request.response).id
+                        window.location.href = `/presentations/edit/${id}`;
+
+                    }
+                    else {
+                    alert(request.status)
+                        alert(JSON.parse(request.response).message);
+                    }
+                }
+            }
         }
 
 

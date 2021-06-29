@@ -54,7 +54,7 @@ class Room(db.Model):
 class Schedule(db.Model):
     __tablename__ = 'schedule'
     id = db.Column(db.Integer, nullable=False, primary_key=True)
-    date_start = db.Column(db.DateTime, nullable=False)
+    date_start = db.Column(db.Date, nullable=False)
     presentation_id = db.Column(db.Integer, db.ForeignKey('presentations.id'), nullable=False)
     room_id = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
 
@@ -63,7 +63,7 @@ class Schedule(db.Model):
         """Возвращает данные в сериализуемом формате."""
         return {
             'id': self.id,
-            'date_start': self.date_start,
+            'date_start': str(self.date_start),
             'presentation_id': self.presentation_id,
             'room_id': self.room_id
         }

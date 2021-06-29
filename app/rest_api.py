@@ -171,7 +171,7 @@ def delete_room(rooms_id):
 @app.route('/conference/api/schedule', methods=['GET'])
 @login_required
 def get_schedule():
-    return jsonify(json_list=[i.serialize for i in Schedule.query.all()])
+    return jsonify(json_list=[i.serialize for i in Schedule.query.order_by(Schedule.room_id).all()])
 
 
 @app.route('/conference/api/schedule/<int:schedule_id>', methods=['GET'])
@@ -180,6 +180,16 @@ def get_record_in_schedule(schedule_id):
     schedule = Schedule.query.filter_by(id=schedule_id).first()
     check_for_availability(schedule, 'Record with this id was not found in schedule.')
     return jsonify(schedule.serialize)
+
+
+@app.route('/conference/api/schedule/presentations/<int:presentation_id>', methods=['GET'])
+@login_required
+def get_presentations_in_schedule(presentation_id):
+    presentations = Schedule.query.filter_by(presentation_id=presentation_id).all()
+
+    if len(presentations) == 0:
+        abort(404, 'There is no such presentation in schedule.')
+    return jsonify(json_list=[i.serialize for i in presentations])
 
 
 def check_bad_request_for_actions_on_schedule():

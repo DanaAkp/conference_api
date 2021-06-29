@@ -15,119 +15,169 @@
                 <label>Text</label>
                 <input type="text" name="text" id="newText">
             </p>
-
-            <div id="create-record-in-schedule">
-{#                <p>#}
-{#                    <label>Date start</label>#}
-{#                    <input type="date" id="dateStart" name="date-start" value="2021-01-01">#}
-{#                </p>#}
-{#                <p>#}
-{#                    <label>Room id</label>#}
-{#                    <input type="text" id="newRoom" name="id of room">#}
-{#                </p>#}
-            </div>
             <p>
-                <button type="submit">Add</button>
+                <button type="submit">Save</button>
             </p>
+            <div id="presentations-in-schedule"></div>
         </form>
     </div>
     <script>
         let name = document.getElementById('newName');
         let text = document.getElementById('newText');
-        let date_start = document.getElementById('dateStart');
-        let room_id = document.getElementById('newRoom');
-        let method;
 
         let presentation_id = parseInt({{ presentation_id }});
-        if (presentation_id !== -1) {
-            fill_in_data_fields(presentation_id)
-            method = 'PUT';
-        }
-        else {
-            method = 'POST';
-            let create_record_in_schedule = document.getElementById('create-record-in-schedule');
+        fill_in_data_fields(presentation_id);
+        fill_schedule(presentation_id);
 
-            let paragraph_date_start = document.createElement('p');
-            let label_date_start = document.createElement('label');
-            label_date_start.textContent = 'Date start';
-            let input_date_start = document.createElement('input');
-            input_date_start.type="date";
-            input_date_start.id="dateStart";
-            input_date_start.name="date-start";
-            input_date_start.value="2021-01-01";
-            paragraph_date_start.appendChild(label_date_start);
-            paragraph_date_start.appendChild(input_date_start);
-            create_record_in_schedule.appendChild(paragraph_date_start);
-
-            let paragraph_room_id = document.createElement('p');
-            let label_room_id = document.createElement('label');
-            label_room_id.textContent = 'Room id';
-            let input_room_id = document.createElement('input');
-            input_room_id.type="text";
-            input_room_id.id="newRoom";
-            input_room_id.name="id of room";
-            paragraph_room_id.appendChild(label_room_id);
-            paragraph_room_id.appendChild(input_room_id);
-            create_record_in_schedule.appendChild(paragraph_room_id);
-
-        }
         document.getElementById('presentation-form').addEventListener('submit', check);
 
         function check(e) {
             e.preventDefault();
-
-            const check_request = new XMLHttpRequest()
-            check_request.open('POST', '/conference/api/schedule/check_room_busy', true);
-            check_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-
-            check_request.send(JSON.stringify({
-                date_start: date_start.value,
-                room_id: room_id.value
-            }));
-            check_request.onreadystatechange = function () {
-                if (check_request.readyState === 4) {
-                    if (JSON.parse(check_request.response).result === true) {
-                        const request = new XMLHttpRequest();
-                        request.open(method, '/conference/api/presentations', true);
-                        request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-                        let json = JSON.stringify({
-                            name: name.value,
-                            text: text.value
-                        });
-                        request.onreadystatechange = function () {
-                            if (request.readyState === 4) {
-                                if (request.status === 201) {
-                                    create_table()
-                                    var schedule_request = new XMLHttpRequest();
-                                    schedule_request.open(method, '/conference/api/schedule', true);
-                                    schedule_request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
-
-                                    schedule_request.send(JSON.stringify({
-                                        room_id: room_id.value,
-                                        presentation_id: JSON.parse(request.response).id,
-                                        date_start: date_start.value
-                                    }));
-                                    alert('Schedule updated success.');
-                                } else {
-                                    alert(JSON.parse(request.response).message);
-                                }
-                            }
+            if (name.value !== 'New presentation') {
+                const request = new XMLHttpRequest();
+                request.open('PUT', `/conference/api/presentations/${presentation_id}`, true);
+                request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+                request.send(JSON.stringify({
+                    name: name.value,
+                    text: text.value
+                }));
+                request.onreadystatechange = function () {
+                    if (request.readyState === 4) {
+                        if (request.status === 200) {
+                            window.location.href = '/presentations';
+                        } else {
+                            alert(JSON.parse(request.response).message);
                         }
-                        request.send(json);
-                        create_table();
-                    } else alert('At the selected time, the room is busy.');
+                    }
                 }
-            };
+            } else {
+                alert('Name of presentation must change.');
+            }
+
         }
 
         function fill_in_data_fields(presentation_id) {
-            let request = new XMLHttpRequest()
+            const request = new XMLHttpRequest()
             request.open('GET', `/conference/api/presentations/${presentation_id}`, false);
             request.send();
 
             name.value = JSON.parse(request.response).name;
             text.value = JSON.parse(request.response).text;
-            {# TODO добавить изменение времени и места в расписание для этой резентации#}
+        }
+
+        function fill_schedule(presentation_id) {
+            const request = new XMLHttpRequest();
+            request.open('GET', `/conference/api/schedule/presentations/${presentation_id}`, false);
+            request.send();
+            let div_schedule = document.getElementById('presentations-in-schedule');
+            let input_new_record_in_schedule = document.createElement('input');
+            input_new_record_in_schedule.type = 'button';
+            input_new_record_in_schedule.value = 'Add presentation to schedule';
+            input_new_record_in_schedule.onclick = function () {
+                const request = new XMLHttpRequest();
+                request.open('POST', '/conference/api/schedule', true);
+                request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+                request.send(JSON.stringify({
+                    room_id: 1,
+                    presentation_id: presentation_id,
+                    date_start: '2000-01-01'
+                }));
+                request.onreadystatechange = function () {
+                    if (request.readyState === 4) {
+                        if (request.status === 201) {
+                            window.location.href = `/schedule/edit/${JSON.parse(request.response).id}`;
+                        } else alert(JSON.parse(request.response).message);
+                    }
+                }
+
+            }
+
+            if (request.status === 404) {
+                let label = document.createElement('label');
+                label.textContent = JSON.parse(request.response).message;
+                div_schedule.appendChild(label);
+            } else {
+                let table_schedule = document.createElement('table');
+
+                let table_head = document.createElement('thead');
+
+                let th_id = document.createElement('th');
+                th_id.textContent = 'id';
+                let th_date_start = document.createElement('th');
+                th_date_start.textContent = 'date_start';
+                let th_room_id = document.createElement('th');
+                th_room_id.textContent = 'room_id';
+
+                table_head.appendChild(th_id);
+                table_head.appendChild(th_room_id);
+                table_head.appendChild(th_date_start);
+
+                table_schedule.appendChild(table_head);
+
+                let presentations_in_schedule = JSON.parse(request.responseText)["json_list"];
+                for (let i in presentations_in_schedule) {
+                    let row = document.createElement('tr');
+
+                    let column_id = document.createElement('td');
+                    column_id.innerText = presentations_in_schedule[i]['id'];
+                    row.appendChild(column_id);
+
+                    let column_date_start = document.createElement('td');
+                    column_date_start.innerText = presentations_in_schedule[i]['date_start'];
+                    row.appendChild(column_date_start);
+
+                    let column_room_id = document.createElement('td');
+                    column_room_id.innerText = presentations_in_schedule[i]['room_id'];
+                    row.appendChild(column_room_id);
+
+                    let edit = edit_schedule(presentations_in_schedule[i]['id']);
+                    let column_edit = document.createElement('td');
+                    let input_edit = document.createElement('input');
+                    input_edit.value = 'Edit';
+                    input_edit.type = 'button';
+                    input_edit.onclick = function () {
+                        edit()
+                    }
+                    column_edit.appendChild(input_edit);
+                    row.appendChild(column_edit);
+
+                    let column_delete = document.createElement('td');
+                    let input_delete = document.createElement('input');
+                    input_delete.value = 'Delete'
+                    input_delete.type = 'button';
+                    let del = delete_record_in_schedule(presentations_in_schedule[i]['id']);
+                    input_delete.onclick = function () {
+                        del()
+                    }
+                    column_delete.appendChild(input_delete);
+                    row.appendChild(column_delete);
+
+                    table_schedule.appendChild(row);
+                }
+                div_schedule.appendChild(table_schedule);
+            }
+
+            div_schedule.appendChild(input_new_record_in_schedule);
+        }
+
+        function edit_schedule(id) {
+            return function () {
+                window.location.href = `/schedule/edit/${id}`;
+            }
+        }
+
+        function delete_record_in_schedule(id) {
+            return function () {
+                const request = new XMLHttpRequest();
+                request.open('DELETE', `/conference/api/schedule/${id}`, false);
+                request.send();
+                if (request.status !== 200) {
+                    alert(JSON.parse(request.response).message);
+                } else {
+                    alert('Record in schedule deleted success.');
+                    fill_schedule();
+                }
+            }
         }
     </script>
 {% endblock content %}
